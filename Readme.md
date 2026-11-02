@@ -63,6 +63,12 @@ With `@effector/reflect`, our `$formValid` update will only cause the SubmitButt
 
 To learn more, please read the [full Motivation article](https://reflect.effector.dev/learn/motivation).
 
+## Examples
+
+- [Imperative textarea](examples/imperative-textarea): a React-only View with
+  `useImperativeHandle`, Reflect state bindings and scoped Effector event delivery.
+  Run `pnpm example:textarea` from the repository root.
+
 ## Release process
 
 1. Check out the [draft release](https://github.com/effector/reflect/releases).
