@@ -28,5 +28,7 @@ jobs:
         run: pnpm test
         env:
           CI: true
+      - name: Check imperative entry and bundle isolation
+        run: pnpm test:imperative:bundle
       - name: Validate package
         run: pnpm validate:dist

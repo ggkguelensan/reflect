@@ -27,6 +27,17 @@
       "import": "./scope.mjs",
       "require": "./scope.js",
       "default": "./scope.mjs"
+    },
+    "./imperative": {
+      "import": {
+        "types": "./imperative.d.mts",
+        "default": "./imperative.mjs"
+      },
+      "require": {
+        "types": "./imperative.d.cts",
+        "default": "./imperative.cjs"
+      },
+      "default": "./imperative.mjs"
     }
   },
   "main": "index.cjs",
@@ -44,7 +55,14 @@
     "scope.js",
     "scope.js.map",
     "scope.mjs",
-    "scope.mjs.map"
+    "scope.mjs.map",
+    "imperative.d.ts",
+    "imperative.mjs",
+    "imperative.mjs.map",
+    "imperative.cjs",
+    "imperative.cjs.map",
+    "imperative.d.mts",
+    "imperative.d.cts"
   ],
   "scripts": {
     "validate:dist": "node ./validate_dist.mjs",
@@ -54,7 +72,8 @@
     "build": "pnpm clear-build && node ./build.mjs",
     "clear-build": "rm -rf dist",
     "prepublishOnly": "pnpm build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test:imperative:bundle": "node scripts/check-imperative-bundle.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.13.10",

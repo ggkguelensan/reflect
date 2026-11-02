@@ -5,5 +5,6 @@
   "list": "list",
   "create-reflect": "createReflect",
   "hooks": "Reflect Hooks",
-  "fromTag": "fromTag"
+  "fromTag": "fromTag",
+  "imperative": "withImperativeEvents"
 }

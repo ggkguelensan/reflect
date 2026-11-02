@@ -63,6 +63,11 @@ With `@effector/reflect`, our `$formValid` update will only cause the SubmitButt
 
 To learn more, please read the [full Motivation article](https://reflect.effector.dev/learn/motivation).
 
+## Optional imperative events
+
+See [withImperativeEvents](docs/pages/docs/imperative.mdx) for scoped delivery to
+React imperative handles through the optional `@effector/reflect/imperative` entry.
+
 ## Release process
 
 1. Check out the [draft release](https://github.com/effector/reflect/releases).

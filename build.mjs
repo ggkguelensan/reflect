@@ -9,6 +9,14 @@ await fs.mkdir('./dist', { recursive: true });
 
 await measure(`public-typings → ./dist/`, `copied in`, async () => {
   await fs.copyFile('./public-types/reflect.d.ts', './dist/index.d.ts');
+  const imperativeTypes = await fs.readFile('./public-types/imperative.d.ts', 'utf8');
+  for (const extension of ['ts', 'mts', 'cts']) {
+    await fs.writeFile(
+      `./dist/imperative.d.${extension}`,
+      '// Generated from public-types/imperative.d.ts. Do not edit.\n' +
+        imperativeTypes,
+    );
+  }
 
   // `@effector/reflect/scope` types - this export is deprecated
   await fs.copyFile('./public-types/reflect.d.ts', './dist/scope.d.ts');

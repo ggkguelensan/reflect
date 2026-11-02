@@ -1,0 +1,61 @@
+# `withImperativeEvents`
+
+Experimental in this fork. Connect scoped Effector events to React-owned methods
+without adding delivery code to the base Reflect entry point.
+
+```tsx
+import { reflect } from '@effector/reflect';
+import { withImperativeEvents } from '@effector/reflect/imperative';
+
+const ReflectedEditor = reflect({
+  view: EditorView,
+  bind: { value: $document, onChange: documentChanged },
+});
+const Editor = withImperativeEvents({
+  focus: focusRequested,
+  selectRange: selectionRequested,
+})(ReflectedEditor);
+```
+
+The View declares an `events` prop carrying an ordinary React ref and exposes its
+methods with `useImperativeHandle`:
+
+```tsx
+useImperativeHandle(events, () => ({
+  focus() {
+    textarea.current?.focus();
+  },
+  selectRange({ from, to }) {
+    textarea.current?.focus();
+    textarea.current?.setSelectionRange(from, to);
+  },
+}));
+```
+
+- Works with React Views and results of `reflect` / `createReflect`. The curried
+  operator also composes with application-provided `pipe` / `compose` utilities.
+  Create connected components outside render. One React wrapper is added only
+  where used; a separate forwarded ref and other props retain their types.
+- Requires an Effector `Provider`. Use scoped dispatch (`useUnit`, `allSettled`,
+  etc.). Each mounted consumer in the same Scope receives its events. Filter and
+  map events with native Effector operators to address one target.
+- Map keys are handle methods accepting zero arguments or one matching payload.
+  For several fields use an object. Sources must be events, including derived
+  events such as `effect.doneData`; stores and effects are rejected.
+- The operator supplies the `events` ref, so callers cannot override that prop.
+  React 18/19 need no `forwardRef` for this ordinary ref-valued prop.
+- Subscriptions attach when React publishes the handle during commit and detach
+  when it is replaced or cleared. There is no delivery effect hook or render-time
+  registration. StrictMode, Scope replacement, Suspense hiding and unmount follow
+  ref cleanup. SSR and abandoned renders publish nothing. Events before handle
+  publication or while unavailable are dropped, not replayed.
+- Refresh methods after every commit by omitting the `useImperativeHandle`
+  dependency array, or include all captured reactive values. An earlier child
+  layout effect cannot depend on a handle that has not yet been published.
+- Pass `{ onError }` as the second argument to the operator to handle method throws
+  and rejected promises in the original Scope; the default is `console.error`.
+  Publishers do not await UI methods. Promises are not tracked as Effector Effects
+  and are not cancelled by unmount.
+
+The separate [live cursor demo](https://github.com/ggkguelensan/live-cursors-demo)
+uses the operator with independent React document and cursor components.

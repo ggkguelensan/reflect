@@ -4,7 +4,8 @@
     "baseUrl": ".",
     "paths": {
       "@effector/reflect": ["./public-types/reflect.d.ts"],
-      "@effector/reflect/scope": ["./public-types/reflect.d.ts"]
+      "@effector/reflect/scope": ["./public-types/reflect.d.ts"],
+      "@effector/reflect/imperative": ["./public-types/imperative.d.ts"]
     }
   }
 }
