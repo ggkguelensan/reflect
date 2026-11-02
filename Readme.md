@@ -66,7 +66,7 @@ To learn more, please read the [full Motivation article](https://reflect.effecto
 ## Examples
 
 - [Imperative textarea](examples/imperative-textarea): a React-only View with
-  `useImperativeHandle`, Reflect state bindings and scoped Effector event delivery.
+  `useImperativeHandle`, addressed Effector events, validation and React-only reuse.
   Run `pnpm example:textarea` from the repository root.
 
 ## Release process

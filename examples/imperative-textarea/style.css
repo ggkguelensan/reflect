@@ -66,3 +66,32 @@ button {
   outline: 3px solid #365bd6;
   outline-offset: 3px;
 }
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: normal;
+}
+input[type='checkbox'],
+input[type='radio'] {
+  width: 18px;
+  height: 18px;
+}
+section + section {
+  margin-top: 24px;
+}
+.editors section + section {
+  margin-top: 0;
+}
+li {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}

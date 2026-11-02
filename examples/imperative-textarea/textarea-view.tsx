@@ -10,11 +10,18 @@ type TextareaProps = {
   onChange(value: string): void;
   events: Ref<TextareaHandle>;
   label: string;
+  focusOnSelection?: boolean;
 };
 
 // This module depends only on React. `events` is an ordinary ref-valued prop,
 // so it works without forwardRef on both React 18 and React 19.
-export function TextareaView({ value, onChange, events, label }: TextareaProps) {
+export function TextareaView({
+  value,
+  onChange,
+  events,
+  label,
+  focusOnSelection = true,
+}: TextareaProps) {
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   useImperativeHandle(events, () => ({
@@ -22,7 +29,7 @@ export function TextareaView({ value, onChange, events, label }: TextareaProps) 
       textarea.current?.focus();
     },
     selectRange({ from, to }) {
-      textarea.current?.focus();
+      if (focusOnSelection) textarea.current?.focus();
       textarea.current?.setSelectionRange(from, to);
     },
   }));
