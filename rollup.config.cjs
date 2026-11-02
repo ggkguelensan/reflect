@@ -32,6 +32,18 @@ const scope = './src/scope.ts';
 const external = ['effector', 'effector-react', 'react', 'effector-react/scope'];
 
 module.exports = [
+  ...['es', 'cjs'].map((format) => ({
+    input: './src/imperative.ts',
+    external,
+    plugins: plugins(),
+    output: {
+      file: `./dist/imperative.${format === 'es' ? 'mjs' : 'cjs'}`,
+      format,
+      sourcemap: true,
+      exports: 'named',
+      externalLiveBindings: false,
+    },
+  })),
   {
     input: noSsr,
     external,

@@ -1,9 +1,9 @@
 # Effector events → React textarea methods
 
-A runnable example of the experimental `reflect({ events })` API in this fork. `TextareaView` imports only
+A runnable example of the experimental `withImperativeEvents` operator in this fork. `TextareaView` imports only
 React and exposes `focus` and `selectRange` through `useImperativeHandle`.
-Reflect supplies text and change callbacks and delivers scoped Effector events
-to the View handle. Native Effector operators address commands by editor ID.
+Reflect supplies text and change callbacks. The separately imported
+`withImperativeEvents` operator delivers scoped Effector events to the View handle. Native Effector operators address commands by editor ID.
 Stores contain only data.
 
 From the repository root:
@@ -41,7 +41,7 @@ model.ts                             textarea-view.tsx
 $documents[id] ─── Reflect bind ────→ value
 textChanged({editorId,text}) ←─────── onChange
 focusRequested(editorId) ─┐           useImperativeHandle
-                         ├─ reflect events → focus()
+                         ├─ withImperativeEvents → focus()
 selectionRequested({editorId,from,to}) → selectRange(range)
                     Scope + ID           ↑
                                      local DOM ref
@@ -56,7 +56,7 @@ local-editor.tsx ─── ordinary React ref → same TextareaView
 - `model.ts`: document data, validation, addressed events and a bounded command
   history. Each reflected textarea reads only its own document's derived store.
 - `validation.ts`: pure text operations shared with the standalone React example.
-- `editor.tsx`: declarative `bind` and `events` configuration. Native Effector
+- `editor.tsx`: `reflect` bindings wrapped with `withImperativeEvents`. Native Effector
   operators filter by ID and project range payloads. No application subscription
   or lifecycle hooks are needed. The View reports returned commands through an
   ordinary bound `onCommand` callback.
@@ -64,13 +64,13 @@ local-editor.tsx ─── ordinary React ref → same TextareaView
   history. Hide/show controls the actual mount lifetime.
 - `local-editor.tsx`: the same View controlled by plain React state and ref calls.
 
-Subscriptions require Provider. Reflect passes a callback ref to the View's
-`events` prop. React publishes the handle during commit; Reflect subscribes in
+Subscriptions require Provider. The operator passes a callback ref to the View's
+`events` prop. React publishes the handle during commit; the operator subscribes in
 that callback and releases the previous subscriptions when the handle is replaced
 or cleared. No effect hook or render-time registration is involved in delivery.
 Events before publication or without a handle are dropped. Two mounted editors
 with the same ID in the same Scope would both receive the command. This is not an
-acknowledged queue. Handler errors reach `reflect.onError` (or `console.error`),
+acknowledged queue. Handler errors reach the operator’s `onError` option (or `console.error`),
 and returned promises are not tracked as Effector Effects.
 
 ## Verification
@@ -85,5 +85,8 @@ Tests cover text binding, ID and Scope isolation, validation, repeated commands,
 StrictMode/unmount cleanup, current handle settings, hidden-editor delivery,
 history, mode switching and standalone React reuse.
 
-The new runtime lives in `src/core/view-events.ts`; `src/core/reflect.ts` owns its
-integration. The API reference marks the extension as experimental in this fork.
+The optional runtime lives in `src/imperative.ts` and `src/imperative/view-events.ts`.
+The base Reflect implementation and declarations are unchanged. Run
+`pnpm test:imperative:bundle` after building to check import isolation, consumer
+bundle sizes and the packed ESM/CJS entry point. Measurements externalize peer
+dependencies; they are not full application bundle sizes.

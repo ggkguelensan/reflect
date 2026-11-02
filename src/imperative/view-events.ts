@@ -5,7 +5,9 @@ export type ViewEventSources = Record<string, Event<any>>;
 export function validateViewEvents(events: ViewEventSources) {
   for (const [method, source] of Object.entries(events)) {
     if (!is.event(source)) {
-      throw new TypeError(`reflect.events: "${method}" requires an Effector event.`);
+      throw new TypeError(
+        `withImperativeEvents: "${method}" requires an Effector event.`,
+      );
     }
   }
 }
@@ -45,7 +47,7 @@ export function createViewEventRef(
                 const method = handle[key];
                 if (typeof method !== 'function') {
                   throw new TypeError(
-                    `reflect.events: View does not expose "${key}".`,
+                    `withImperativeEvents: View does not expose "${key}".`,
                   );
                 }
                 const result = Reflect.apply(method, handle, [payload]);

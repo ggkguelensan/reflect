@@ -1,4 +1,5 @@
 import { reflect } from '@effector/reflect';
+import { withImperativeEvents } from '@effector/reflect/imperative';
 import React from 'react';
 
 import {
@@ -12,7 +13,7 @@ import {
 import { TextareaHandle, TextareaView } from './textarea-view';
 
 function reflectEditor(editorId: EditorId) {
-  return reflect({
+  const ReflectedEditor = reflect({
     view: TextareaView,
     bind: {
       value: $documents.map((documents) => documents[editorId]),
@@ -22,13 +23,13 @@ function reflectEditor(editorId: EditorId) {
         method,
       })),
     },
-    events: {
-      focus: focusRequested.filter({ fn: (targetId) => targetId === editorId }),
-      selectRange: selectionRequested.filterMap(({ editorId: targetId, from, to }) =>
-        targetId === editorId ? { from, to } : undefined,
-      ),
-    },
   });
+  return withImperativeEvents({
+    focus: focusRequested.filter({ fn: (targetId) => targetId === editorId }),
+    selectRange: selectionRequested.filterMap(({ editorId: targetId, from, to }) =>
+      targetId === editorId ? { from, to } : undefined,
+    ),
+  })(ReflectedEditor);
 }
 
 const editors = { left: reflectEditor('left'), right: reflectEditor('right') };

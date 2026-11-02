@@ -23,6 +23,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@effector/reflect/imperative': resolve(__dirname, './dist/imperative.mjs'),
       '@effector/reflect/scope': resolve(__dirname, './dist/scope.mjs'),
       '@effector/reflect': resolve(__dirname, './dist/index.mjs'),
     },

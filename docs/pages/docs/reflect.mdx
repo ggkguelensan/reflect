@@ -18,8 +18,6 @@ Static method to create a component bound to effector stores and events as store
 
 1. `view` — A react component that should be used to bind to
 1. `bind` — Object of effector stores, events or any value
-1. `events` — Experimental mapping of Effector events to methods of the View's `events` ref. Requires Provider.
-1. `onError` — Optional error handler for throws and rejected promises from View methods.
 1. `mapProps` — Optional object of derived props. Each entry computes a prop for the `view` from a store value combined with the component's own props.
 1. [`hooks`](/docs/hooks) — Optional object `{ mounted, unmounted }` to handle when component is mounted or unmounted.
 1. `useUnitConfig` - Optional configuration object, which is passed directly to the second argument of `useUnit` from `effector-react`.
@@ -202,86 +200,9 @@ const ReflectedMantineButton = reflect({
 });
 ```
 
-## Deliver events to View methods
+## Imperative View methods
 
-Experimental in this fork: `events` connects Effector events to methods exposed
-by the View's `events` ref. The View needs only React; React APIs, DOM refs and
-callbacks do not need to be stored in an Effector store.
-
-```tsx
-// EditorView.tsx — no Effector imports
-import React, { Ref, useImperativeHandle, useRef } from 'react';
-
-type EditorHandle = {
-  focus(): void;
-  selectRange(range: { from: number; to: number }): void;
-};
-
-export function EditorView({ events }: { events: Ref<EditorHandle> }) {
-  const textarea = useRef<HTMLTextAreaElement>(null);
-  useImperativeHandle(events, () => ({
-    focus() {
-      textarea.current?.focus();
-    },
-    selectRange({ from, to }) {
-      textarea.current?.focus();
-      textarea.current?.setSelectionRange(from, to);
-    },
-  }));
-  return <textarea ref={textarea} aria-label="Document" />;
-}
-```
-
-```tsx
-// editor.tsx — application connection
-import { reflect } from '@effector/reflect';
-import { createEvent } from 'effector';
-
-import { EditorView } from './EditorView';
-
-export const focusRequested = createEvent<void>();
-export const selectionRequested = createEvent<{ from: number; to: number }>();
-
-export const Editor = reflect({
-  view: EditorView,
-  bind: {},
-  events: {
-    focus: focusRequested,
-    selectRange: selectionRequested,
-  },
-  onError: (error) => console.error(error),
-});
-```
-
-Render `Editor` inside an Effector `Provider` and call the events using `useUnit`
-or other scoped Effector operations. `bind` still supplies ordinary data and
-callbacks. The generated `events` prop cannot be supplied by the caller or through
-`bind` / `mapProps`. Without an event map, existing props named `events` continue
-to work normally.
-
-- Map keys are View method names. A method accepts either no arguments, ignoring
-  the event payload, or one argument matching its payload. Use an object payload
-  for several fields. Stores and effects are not delivery sources; use an effect's
-  `doneData`, `failData` or other event instead.
-- Use native Effector `.filter`, `.map` and `.filterMap` operators to select targets
-  or transform payloads, outside React render. Different mounted Views observing
-  the same source in the same Scope each receive its events.
-- Reflect uses a callback ref, not an application lifecycle effect. React publishes
-  the imperative handle during commit; its subscriptions are scoped to the
-  surrounding Provider. Publishing another handle or clearing it releases the
-  previous subscriptions. StrictMode and unmount use the same ref cleanup path.
-- No subscriptions are created during render or server rendering. Abandoned renders
-  cannot register handlers. Events before handle publication or while it is
-  unavailable are dropped and are not replayed. A child layout effect preceding
-  its `useImperativeHandle` call must not rely on delivery to that handle.
-- Omit the dependency array on `useImperativeHandle` to refresh methods after each
-  commit, or include every reactive value captured by those methods. Updates to
-  props or context then publish the current implementation.
-- Throws and rejected handler promises reach `onError`, bound to the subscription's
-  Scope, or `console.error` if omitted. Publishers do not await View methods; a
-  handler promise is not tracked as an Effector Effect. Pending promises are not
-  cancelled by unmount.
-
-See the [runnable textarea example](https://github.com/ggkguelensan/reflect/tree/example/imperative-textarea/examples/imperative-textarea)
-for addressed commands, validation, handle settings, unmount behavior and reuse
-with ordinary React refs.
+The experimental [withImperativeEvents](/docs/imperative) operator can wrap the
+result of `reflect` to deliver scoped events to a React imperative handle.
+It is imported separately from `@effector/reflect/imperative`; the base `reflect`
+configuration and runtime do not include event delivery.

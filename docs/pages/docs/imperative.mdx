@@ -1,0 +1,124 @@
+# `withImperativeEvents`
+
+Experimental in this fork: an optional React integration imported from its own
+entry point. Ordinary Reflect consumers do not import its delivery runtime.
+
+```tsx
+import { reflect } from '@effector/reflect';
+import { withImperativeEvents } from '@effector/reflect/imperative';
+
+const ReflectedEditor = reflect({
+  view: EditorView,
+  bind: {
+    value: $document,
+    onChange: documentChanged,
+  },
+});
+
+const Editor = withImperativeEvents({
+  focus: focusRequested,
+  selectRange: selectionRequested,
+})(ReflectedEditor);
+```
+
+The operator works with ordinary React components and components returned by
+`reflect` or `createReflect`. It consumes an `events` ref prop; callers supply
+all other unbound props normally. A separate forwarded React ref keeps its
+original type and is passed through to the wrapped component.
+
+## View contract
+
+The View imports only React. React APIs, DOM nodes and callbacks stay in the
+View rather than being registered in Effector stores.
+
+```tsx
+import React, { Ref, useImperativeHandle, useRef } from 'react';
+
+type EditorHandle = {
+  focus(): void;
+  selectRange(range: { from: number; to: number }): void;
+};
+
+type EditorProps = {
+  value: string;
+  onChange(value: string): void;
+  events: Ref<EditorHandle>;
+};
+
+export function EditorView({ value, onChange, events }: EditorProps) {
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  useImperativeHandle(events, () => ({
+    focus() {
+      textarea.current?.focus();
+    },
+    selectRange({ from, to }) {
+      textarea.current?.focus();
+      textarea.current?.setSelectionRange(from, to);
+    },
+  }));
+  return (
+    <textarea
+      ref={textarea}
+      aria-label="Document"
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
+    />
+  );
+}
+```
+
+`events` is an ordinary prop carrying a ref, so React 18 and 19 do not require
+`forwardRef` for this handle. Omit the dependency array on `useImperativeHandle`
+to refresh methods after each commit, or include all reactive values captured
+by those methods. Prop and context updates then publish the current methods.
+
+## Events and composition
+
+Keys are handle method names. Methods accept zero arguments (ignoring the event
+payload), or one argument matching the payload. Use object payloads for several
+fields. Sources must be Effector events; use an effect's `doneData` or `failData`
+event when reacting to its result. Native `.filter`, `.map` and `.filterMap`
+operators can address targets and transform payloads outside React render.
+
+The operator is curried, so it also works in a `pipe` or right-to-left `compose`
+provided by your application's existing function-composition utility. This
+package adds no dependency on such a utility. Create connected components outside
+React render. The operator adds one React wrapper only where it is used.
+
+## Scope and lifetime
+
+Render the connected component inside an Effector `Provider`. Dispatch events
+with `useUnit` or other scoped operations. Subscriptions are restricted to that
+Scope; several mounted consumers in the same Scope each receive their source's
+events. Use IDs or separate Scopes when only one target should react.
+
+The operator supplies a callback ref, not an application lifecycle effect.
+React publishes the imperative handle during commit, which installs its scoped
+subscriptions. Replacing or clearing the handle releases the previous
+subscriptions. StrictMode, Suspense hiding, Scope replacement and unmount use
+the same ref cleanup path. No subscriptions are created during render or SSR,
+and abandoned renders cannot publish handlers.
+
+Events before publication or while the handle is unavailable are dropped and
+are not replayed. A child layout effect preceding its `useImperativeHandle`
+call must not rely on delivery to that handle. The generated `events` prop
+cannot be replaced by callers.
+
+## Errors
+
+The optional second argument configures error reporting:
+
+```tsx
+const Editor = withImperativeEvents(
+  { focus: focusRequested, selectRange: selectionRequested },
+  { onError: reportUiError },
+)(ReflectedEditor);
+```
+
+Throws and rejected method promises reach `onError`, bound to the subscription's
+Scope, or `console.error` when omitted. Publishers do not await View methods.
+Returned promises are not tracked as Effector Effects and are not cancelled
+on unmount. This operator is not an acknowledged command queue.
+
+See the [runnable textarea example](https://github.com/ggkguelensan/reflect/tree/example/imperative-textarea/examples/imperative-textarea)
+for validation, addressed commands, settings, unmount behavior and plain React reuse.

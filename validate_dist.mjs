@@ -46,6 +46,10 @@ if (distPkg.exports && !distPkg.exports['./scope']) {
   errors.push('pkg.exports is missing the "./scope" subpath');
 }
 
+if (distPkg.exports && !distPkg.exports['./imperative']) {
+  errors.push('pkg.exports is missing the "./imperative" subpath');
+}
+
 if (errors.length > 0) {
   throw new Error(`Invalid dist/package.json:\n${errors.join('\n')}`);
 }

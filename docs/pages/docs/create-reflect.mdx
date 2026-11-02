@@ -83,17 +83,8 @@ export const User: FC = () => {
 };
 ```
 
-## View event delivery
+## Imperative View methods
 
-Experimental in this fork: pass `events` and optional `onError` in the second
-argument, alongside `hooks`, `mapProps` and `useUnitConfig`:
-
-```tsx
-const Editor = createReflect(EditorView)(
-  { value: $document, onChange: documentChanged },
-  { events: { focus: focusRequested, selectRange: selectionRequested } },
-);
-```
-
-The same [View event delivery contract](/docs/reflect#deliver-events-to-view-methods)
-applies, including Provider, payload types and cleanup when the handle is cleared.
+Components returned by `createReflect` can be wrapped with the optional
+[withImperativeEvents](/docs/imperative) operator. It uses a separate entry point
+and does not add imperative options to this factory's configuration.

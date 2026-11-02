@@ -1,4 +1,5 @@
 import { createReflect, reflect } from '@effector/reflect';
+import { withImperativeEvents } from '@effector/reflect/imperative';
 import { act, cleanup, render } from '@testing-library/react';
 import { allSettled, createEvent, createStore, fork } from 'effector';
 import { Provider } from 'effector-react';
@@ -26,7 +27,9 @@ test('plain events deliver repeated payloads without rendering and stop on unmou
     useImperativeHandle(events, () => ({ show: received }));
     return null;
   }
-  const Connected = reflect({ view: View, bind: {}, events: { show: requested } });
+  const Connected = withImperativeEvents({ show: requested })(
+    reflect({ view: View, bind: {} }),
+  );
   const scope = fork();
   await allSettled(requested, { scope, params: 'before mount' });
   const page = render(
@@ -58,7 +61,9 @@ test('subscriptions follow Scope replacement and handle publications before late
     }, []);
     return null;
   }
-  const Connected = createReflect(View)({}, { events: { show: requested } });
+  const Connected = withImperativeEvents({ show: requested })(
+    createReflect(View)({}),
+  );
   const tree = (scope: typeof first) => (
     <Provider value={scope}>
       <Connected />
@@ -87,7 +92,7 @@ test('context changes update methods; abandoned renders cannot publish handlers'
     if (context.pending) throw pending;
     return null;
   }
-  const Connected = reflect({ view: View, bind: {}, events: { show: requested } });
+  const Connected = withImperativeEvents({ show: requested })(View);
   const scope = fork();
   const tree = (prefix: string, suspended = false) => (
     <Provider value={scope}>
@@ -140,12 +145,10 @@ test('throws and rejected promises reach onError in their original Scope', async
     }));
     return null;
   }
-  const Connected = reflect({
-    view: View,
-    bind: {},
-    events: { sync, async },
-    onError: errorSeen,
-  });
+  const Connected = withImperativeEvents(
+    { sync, async },
+    { onError: errorSeen },
+  )(View);
   const scope = fork();
   render(
     <Provider value={scope}>
@@ -162,14 +165,12 @@ test('throws and rejected promises reach onError in their original Scope', async
 test('missing methods are reported; error-reporting failures fall back to console.error', async () => {
   const requested = createEvent();
   const onError = vi.fn();
-  const Broken = reflect({
-    view: ({ events }: { events: Ref<{ show(): void }> }) => {
-      useImperativeHandle(events, () => ({} as { show(): void }));
-      return null;
-    },
-    bind: {},
-    events: { show: requested },
-    onError,
+  const Broken = withImperativeEvents(
+    { show: requested },
+    { onError },
+  )(({ events }: { events: Ref<{ show(): void }> }) => {
+    useImperativeHandle(events, () => ({} as { show(): void }));
+    return null;
   });
   const scope = fork();
   render(
@@ -196,14 +197,12 @@ test('SSR publishes no handle or subscriptions; event config rejects stores', as
   const requested = createEvent();
   const received = vi.fn();
   const scope = fork();
-  const Connected = reflect({
-    view: ({ events }: { events: Ref<{ show(): void }> }) => {
+  const Connected = withImperativeEvents({ show: requested })(
+    ({ events }: { events: Ref<{ show(): void }> }) => {
       useImperativeHandle(events, () => ({ show: received }));
       return <p>Server content</p>;
     },
-    bind: {},
-    events: { show: requested },
-  });
+  );
   expect(
     renderToString(
       <Provider value={scope}>
@@ -217,11 +216,60 @@ test('SSR publishes no handle or subscriptions; event config rejects stores', as
     'requires an Effector Provider',
   );
   expect(() =>
-    reflect({
-      view: TextareaView,
-      bind: {},
+    withImperativeEvents({
       // @ts-expect-error runtime guard for JavaScript consumers
-      events: { focus: createStore(0) },
-    }),
+      focus: createStore(0),
+    })(TextareaView),
   ).toThrow('requires an Effector event');
+});
+
+test('the operator preserves a separate forwarded ref through Reflect', async () => {
+  const requested = createEvent<string>();
+  const received = vi.fn();
+  const View = React.forwardRef<
+    HTMLInputElement,
+    {
+      events: Ref<{ show(value: string): void }>;
+      label: string;
+    }
+  >(({ events, label }, ref) => {
+    useImperativeHandle(events, () => ({ show: received }));
+    return <input ref={ref} aria-label={label} />;
+  });
+  const Connected = withImperativeEvents({ show: requested })(
+    reflect({
+      view: View,
+      bind: { label: 'Forwarded input' },
+    }),
+  );
+  const ref = React.createRef<HTMLInputElement>();
+  const scope = fork();
+  const page = render(
+    <Provider value={scope}>
+      <Connected ref={ref} />
+    </Provider>,
+  );
+  expect(ref.current).toBe(page.container.querySelector('input'));
+  await allSettled(requested, { scope, params: 'hello' });
+  expect(received.mock.calls).toEqual([['hello']]);
+  page.unmount();
+  expect(ref.current).toBeNull();
+});
+
+test('callers cannot replace the generated events ref', () => {
+  const requested = createEvent();
+  function View({ events }: { events: Ref<{ focus(): void }> }) {
+    useImperativeHandle(events, () => ({ focus() {} }));
+    return null;
+  }
+  const Connected = withImperativeEvents({ focus: requested })(View);
+  const scope = fork();
+  expect(() =>
+    renderToString(
+      <Provider value={scope}>
+        {/* @ts-expect-error runtime guard for JavaScript callers */}
+        <Connected events={React.createRef()} />
+      </Provider>,
+    ),
+  ).toThrow('events prop is generated');
 });
