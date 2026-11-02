@@ -11,6 +11,7 @@ type TextareaProps = {
   events: Ref<TextareaHandle>;
   label: string;
   focusOnSelection?: boolean;
+  onCommand?(method: keyof TextareaHandle): void;
 };
 
 // This module depends only on React. `events` is an ordinary ref-valued prop,
@@ -21,16 +22,19 @@ export function TextareaView({
   events,
   label,
   focusOnSelection = true,
+  onCommand,
 }: TextareaProps) {
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   useImperativeHandle(events, () => ({
     focus() {
       textarea.current?.focus();
+      onCommand?.('focus');
     },
     selectRange({ from, to }) {
       if (focusOnSelection) textarea.current?.focus();
       textarea.current?.setSelectionRange(from, to);
+      onCommand?.('selectRange');
     },
   }));
 

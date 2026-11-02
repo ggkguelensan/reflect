@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
-import type { EventCallable, Show, Store } from 'effector';
+import type { Event, EventCallable, Show, Store } from 'effector';
 import type { useUnit } from 'effector-react';
 import type {
   ComponentProps,
@@ -7,6 +7,7 @@ import type {
   FC,
   JSX,
   PropsWithChildren,
+  Ref,
 } from 'react';
 
 type UseUnitConfig = Parameters<typeof useUnit>[1];
@@ -120,6 +121,30 @@ type FinalProps<
   }
 >;
 
+type HandleOf<Props> = Props extends { events: Ref<infer Handle> } ? Handle : {};
+
+type ViewEvents<Props> = {
+  [Key in keyof HandleOf<Props>]?: HandleOf<Props>[Key] extends (
+    ...args: infer Args
+  ) => unknown
+    ? Args extends []
+      ? Event<any>
+      : Args extends [infer Payload]
+      ? Event<Payload>
+      : never
+    : never;
+};
+
+type CheckedEvents<Props, Events> = Events & {
+  [Key in Exclude<keyof Events, keyof HandleOf<Props>>]: never;
+};
+type EventProps<Props, Events> = keyof Events extends never
+  ? Props
+  : Omit<Props, 'events'> & { events?: never };
+type ReservedEventProp<Events> = keyof Events extends never
+  ? unknown
+  : { events?: never };
+
 // relfect types
 /**
  * Operator that creates a component, which props are reactively bound to a store or statically - to any other value.
@@ -145,19 +170,24 @@ export function reflect<
   Bind extends BindFromProps<Props>,
   // eslint-disable-next-line @typescript-eslint/ban-types
   Sources extends Record<string, SourceShape> = {},
+  Events extends ViewEvents<Props> = {},
 >(config: {
   view: View;
-  bind: Bind;
+  bind: Bind & ReservedEventProp<Events>;
   /**
    * Derives props for the `view` from a store value combined with the component's props.
    */
-  mapProps?: MapPropsFromSources<Props, Bind, Sources>;
+  mapProps?: MapPropsFromSources<Props, Bind, Sources> & ReservedEventProp<Events>;
   hooks?: Hooks<Props>;
+  /** Delivers events to zero-argument or single-payload methods of the View's events ref. */
+  events?: CheckedEvents<Props, Events>;
+  /** Reports synchronous throws and rejected promises from View methods. */
+  onError?: (error: unknown) => void;
   /**
    * This configuration is passed directly to `useUnit`'s hook second argument.
    */
   useUnitConfig?: UseUnitConfig;
-}): FC<FinalProps<Props, Bind, MapKeysOf<Props, Sources>>>;
+}): FC<EventProps<FinalProps<Props, Bind, MapKeysOf<Props, Sources>>, Events>>;
 
 // Note: FC is used as a return type, because tests on a real Next.js project showed,
 // that if theoretically better option like (props: ...) => React.ReactNode is used,
@@ -188,20 +218,22 @@ export function createReflect<
   Sources extends Record<string, SourceShape> = {},
 >(
   component: View,
-): (
-  bind: Bind,
+): <Events extends ViewEvents<Props> = {}>(
+  bind: Bind & ReservedEventProp<Events>,
   features?: {
     /**
      * Derives props for the `view` from a store value combined with the component's props.
      */
-    mapProps?: MapPropsFromSources<Props, Bind, Sources>;
+    mapProps?: MapPropsFromSources<Props, Bind, Sources> & ReservedEventProp<Events>;
     hooks?: Hooks<Props>;
+    events?: CheckedEvents<Props, Events>;
+    onError?: (error: unknown) => void;
     /**
      * This configuration is passed directly to `useUnit`'s hook second argument.
      */
     useUnitConfig?: UseUnitConfig;
   },
-) => FC<FinalProps<Props, Bind, MapKeysOf<Props, Sources>>>;
+) => FC<EventProps<FinalProps<Props, Bind, MapKeysOf<Props, Sources>>, Events>>;
 
 // list types
 type PropsifyBind<Bind> = {

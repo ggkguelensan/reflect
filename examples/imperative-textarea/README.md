@@ -1,9 +1,10 @@
 # Effector events → React textarea methods
 
-A runnable example using the existing Reflect API. `TextareaView` imports only
+A runnable example of the experimental `reflect({ events })` API in this fork. `TextareaView` imports only
 React and exposes `focus` and `selectRange` through `useImperativeHandle`.
-Reflect supplies text and change callbacks; a separate adapter delivers scoped,
-addressed Effector events to the current handle. Stores contain only data.
+Reflect supplies text and change callbacks and delivers scoped Effector events
+to the View handle. Native Effector operators address commands by editor ID.
+Stores contain only data.
 
 From the repository root:
 
@@ -23,7 +24,7 @@ pnpm example:textarea
 3. **Current View settings:** turn off **Focus when selecting**, then select a
    word or check the text. The selection changes without moving keyboard focus
    from the button. Turn it on to restore focusing. Methods capture the latest
-   committed setting even though subscriptions do not depend on it.
+   committed setting when React publishes the updated handle.
 4. **Unmount and dropped events:** hide an editor, then send it a focus or selection
    command. The history shows a request without delivery. Showing the editor
    preserves model text but does not replay those events.
@@ -40,7 +41,7 @@ model.ts                             textarea-view.tsx
 $documents[id] ─── Reflect bind ────→ value
 textChanged({editorId,text}) ←─────── onChange
 focusRequested(editorId) ─┐           useImperativeHandle
-                         ├─ adapter → focus()
+                         ├─ reflect events → focus()
 selectionRequested({editorId,from,to}) → selectRange(range)
                     Scope + ID           ↑
                                      local DOM ref
@@ -55,19 +56,22 @@ local-editor.tsx ─── ordinary React ref → same TextareaView
 - `model.ts`: document data, validation, addressed events and a bounded command
   history. Each reflected textarea reads only its own document's derived store.
 - `validation.ts`: pure text operations shared with the standalone React example.
-- `editor.tsx`: Reflect bindings and an integration adapter using `createWatch`
-  and `useProvidedScope`. It filters events by ID and records successful method
-  returns through a scope-bound event. This is not a new built-in Reflect API.
+- `editor.tsx`: declarative `bind` and `events` configuration. Native Effector
+  operators filter by ID and project range payloads. No application subscription
+  or lifecycle hooks are needed. The View reports returned commands through an
+  ordinary bound `onCommand` callback.
 - `app.tsx`: two editors in one Scope, bound toolbars, settings, validation and
   history. Hide/show controls the actual mount lifetime.
 - `local-editor.tsx`: the same View controlled by plain React state and ref calls.
 
-Subscriptions require Provider, install after commit and clean up on unmount,
-Scope replacement or target-ID change. Each delivery reads `handle.current`.
-Events before subscription or without a handle are dropped. Two mounted editors
-with the same ID in the same Scope would both receive the command; unique IDs
-identify targets within the Scope. This example is not an acknowledged command
-queue, and UI method errors are not converted into Effector Effect failures.
+Subscriptions require Provider. Reflect passes a callback ref to the View's
+`events` prop. React publishes the handle during commit; Reflect subscribes in
+that callback and releases the previous subscriptions when the handle is replaced
+or cleared. No effect hook or render-time registration is involved in delivery.
+Events before publication or without a handle are dropped. Two mounted editors
+with the same ID in the same Scope would both receive the command. This is not an
+acknowledged queue. Handler errors reach `reflect.onError` (or `console.error`),
+and returned promises are not tracked as Effector Effects.
 
 ## Verification
 
@@ -80,3 +84,6 @@ CI=1 pnpm exec vitest run src/ssr/imperative-textarea.test.tsx
 Tests cover text binding, ID and Scope isolation, validation, repeated commands,
 StrictMode/unmount cleanup, current handle settings, hidden-editor delivery,
 history, mode switching and standalone React reuse.
+
+The new runtime lives in `src/core/view-events.ts`; `src/core/reflect.ts` owns its
+integration. The API reference marks the extension as experimental in this fork.

@@ -1,8 +1,7 @@
-
 # `createReflect`
 
 ```ts
-import {createReflect} from '@effector/reflect'
+import { createReflect } from '@effector/reflect';
 ```
 
 Method for creating reflect a view. So you can create a UI kit by views and use a view with a store already.
@@ -83,3 +82,18 @@ export const User: FC = () => {
   );
 };
 ```
+
+## View event delivery
+
+Experimental in this fork: pass `events` and optional `onError` in the second
+argument, alongside `hooks`, `mapProps` and `useUnitConfig`:
+
+```tsx
+const Editor = createReflect(EditorView)(
+  { value: $document, onChange: documentChanged },
+  { events: { focus: focusRequested, selectRange: selectionRequested } },
+);
+```
+
+The same [View event delivery contract](/docs/reflect#deliver-events-to-view-methods)
+applies, including Provider, payload types and cleanup when the handle is cleared.
