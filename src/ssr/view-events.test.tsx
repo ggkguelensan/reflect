@@ -14,8 +14,6 @@ import React, {
 } from 'react';
 import { renderToString } from 'react-dom/server';
 
-import { TextareaView } from '../../examples/imperative-textarea/textarea-view';
-
 afterEach(cleanup);
 
 test('plain events deliver repeated payloads without rendering and stop on unmount', async () => {
@@ -219,7 +217,7 @@ test('SSR publishes no handle or subscriptions; event config rejects stores', as
     withImperativeEvents({
       // @ts-expect-error runtime guard for JavaScript consumers
       focus: createStore(0),
-    })(TextareaView),
+    })(({ events }: { events: Ref<{ focus(): void }> }) => null),
   ).toThrow('requires an Effector event');
 });
 

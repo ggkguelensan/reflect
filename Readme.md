@@ -65,37 +65,8 @@ To learn more, please read the [full Motivation article](https://reflect.effecto
 
 ## Optional imperative events
 
-The experimental `withImperativeEvents` operator connects scoped Effector events
-with methods exposed by a React View's `events` ref. Import it from
-`@effector/reflect/imperative`; the main Reflect entry does not include delivery.
-
-```tsx
-import { reflect } from '@effector/reflect';
-import { withImperativeEvents } from '@effector/reflect/imperative';
-
-const ReflectedEditor = reflect({
-  view: EditorView,
-  bind: { value: $document, onChange: documentChanged },
-});
-const Editor = withImperativeEvents({
-  focus: focusRequested,
-  selectRange: selectionRequested,
-})(
-  reflect({
-    view: EditorView,
-    bind: { value: $document, onChange: documentChanged },
-  }),
-);
-```
-
-See the [operator reference](docs/pages/docs/imperative.mdx) for imports, View
-contracts, Provider requirements and error handling.
-
-## Examples
-
-- [Imperative textarea](examples/imperative-textarea): a React-only View with
-  `useImperativeHandle`, optional `withImperativeEvents`, validation and React-only reuse.
-  Run `pnpm example:textarea` from the repository root.
+See [withImperativeEvents](docs/pages/docs/imperative.mdx) for scoped delivery to
+React imperative handles through the optional `@effector/reflect/imperative` entry.
 
 ## Release process
 

@@ -1,7 +1,7 @@
 # `withImperativeEvents`
 
-Experimental in this fork: an optional React integration imported from its own
-entry point. Ordinary Reflect consumers do not import its delivery runtime.
+Experimental in this fork. Connect scoped Effector events to React-owned methods
+without adding delivery code to the base Reflect entry point.
 
 ```tsx
 import { reflect } from '@effector/reflect';
@@ -9,116 +9,53 @@ import { withImperativeEvents } from '@effector/reflect/imperative';
 
 const ReflectedEditor = reflect({
   view: EditorView,
-  bind: {
-    value: $document,
-    onChange: documentChanged,
-  },
+  bind: { value: $document, onChange: documentChanged },
 });
-
 const Editor = withImperativeEvents({
   focus: focusRequested,
   selectRange: selectionRequested,
 })(ReflectedEditor);
 ```
 
-The operator works with ordinary React components and components returned by
-`reflect` or `createReflect`. It consumes an `events` ref prop; callers supply
-all other unbound props normally. A separate forwarded React ref keeps its
-original type and is passed through to the wrapped component.
-
-## View contract
-
-The View imports only React. React APIs, DOM nodes and callbacks stay in the
-View rather than being registered in Effector stores.
+The View declares an `events` prop carrying an ordinary React ref and exposes its
+methods with `useImperativeHandle`:
 
 ```tsx
-import React, { Ref, useImperativeHandle, useRef } from 'react';
-
-type EditorHandle = {
-  focus(): void;
-  selectRange(range: { from: number; to: number }): void;
-};
-
-type EditorProps = {
-  value: string;
-  onChange(value: string): void;
-  events: Ref<EditorHandle>;
-};
-
-export function EditorView({ value, onChange, events }: EditorProps) {
-  const textarea = useRef<HTMLTextAreaElement>(null);
-  useImperativeHandle(events, () => ({
-    focus() {
-      textarea.current?.focus();
-    },
-    selectRange({ from, to }) {
-      textarea.current?.focus();
-      textarea.current?.setSelectionRange(from, to);
-    },
-  }));
-  return (
-    <textarea
-      ref={textarea}
-      aria-label="Document"
-      value={value}
-      onChange={(event) => onChange(event.currentTarget.value)}
-    />
-  );
-}
+useImperativeHandle(events, () => ({
+  focus() {
+    textarea.current?.focus();
+  },
+  selectRange({ from, to }) {
+    textarea.current?.focus();
+    textarea.current?.setSelectionRange(from, to);
+  },
+}));
 ```
 
-`events` is an ordinary prop carrying a ref, so React 18 and 19 do not require
-`forwardRef` for this handle. Omit the dependency array on `useImperativeHandle`
-to refresh methods after each commit, or include all reactive values captured
-by those methods. Prop and context updates then publish the current methods.
+- Works with React Views and results of `reflect` / `createReflect`. The curried
+  operator also composes with application-provided `pipe` / `compose` utilities.
+  Create connected components outside render. One React wrapper is added only
+  where used; a separate forwarded ref and other props retain their types.
+- Requires an Effector `Provider`. Use scoped dispatch (`useUnit`, `allSettled`,
+  etc.). Each mounted consumer in the same Scope receives its events. Filter and
+  map events with native Effector operators to address one target.
+- Map keys are handle methods accepting zero arguments or one matching payload.
+  For several fields use an object. Sources must be events, including derived
+  events such as `effect.doneData`; stores and effects are rejected.
+- The operator supplies the `events` ref, so callers cannot override that prop.
+  React 18/19 need no `forwardRef` for this ordinary ref-valued prop.
+- Subscriptions attach when React publishes the handle during commit and detach
+  when it is replaced or cleared. There is no delivery effect hook or render-time
+  registration. StrictMode, Scope replacement, Suspense hiding and unmount follow
+  ref cleanup. SSR and abandoned renders publish nothing. Events before handle
+  publication or while unavailable are dropped, not replayed.
+- Refresh methods after every commit by omitting the `useImperativeHandle`
+  dependency array, or include all captured reactive values. An earlier child
+  layout effect cannot depend on a handle that has not yet been published.
+- Pass `{ onError }` as the second argument to the operator to handle method throws
+  and rejected promises in the original Scope; the default is `console.error`.
+  Publishers do not await UI methods. Promises are not tracked as Effector Effects
+  and are not cancelled by unmount.
 
-## Events and composition
-
-Keys are handle method names. Methods accept zero arguments (ignoring the event
-payload), or one argument matching the payload. Use object payloads for several
-fields. Sources must be Effector events; use an effect's `doneData` or `failData`
-event when reacting to its result. Native `.filter`, `.map` and `.filterMap`
-operators can address targets and transform payloads outside React render.
-
-The operator is curried, so it also works in a `pipe` or right-to-left `compose`
-provided by your application's existing function-composition utility. This
-package adds no dependency on such a utility. Create connected components outside
-React render. The operator adds one React wrapper only where it is used.
-
-## Scope and lifetime
-
-Render the connected component inside an Effector `Provider`. Dispatch events
-with `useUnit` or other scoped operations. Subscriptions are restricted to that
-Scope; several mounted consumers in the same Scope each receive their source's
-events. Use IDs or separate Scopes when only one target should react.
-
-The operator supplies a callback ref, not an application lifecycle effect.
-React publishes the imperative handle during commit, which installs its scoped
-subscriptions. Replacing or clearing the handle releases the previous
-subscriptions. StrictMode, Suspense hiding, Scope replacement and unmount use
-the same ref cleanup path. No subscriptions are created during render or SSR,
-and abandoned renders cannot publish handlers.
-
-Events before publication or while the handle is unavailable are dropped and
-are not replayed. A child layout effect preceding its `useImperativeHandle`
-call must not rely on delivery to that handle. The generated `events` prop
-cannot be replaced by callers.
-
-## Errors
-
-The optional second argument configures error reporting:
-
-```tsx
-const Editor = withImperativeEvents(
-  { focus: focusRequested, selectRange: selectionRequested },
-  { onError: reportUiError },
-)(ReflectedEditor);
-```
-
-Throws and rejected method promises reach `onError`, bound to the subscription's
-Scope, or `console.error` when omitted. Publishers do not await View methods.
-Returned promises are not tracked as Effector Effects and are not cancelled
-on unmount. This operator is not an acknowledged command queue.
-
-See the [runnable textarea example](https://github.com/ggkguelensan/reflect/tree/example/imperative-textarea/examples/imperative-textarea)
-for validation, addressed commands, settings, unmount behavior and plain React reuse.
+The separate [live cursor demo](https://github.com/ggkguelensan/live-cursors-demo)
+uses the operator with independent React document and cursor components.

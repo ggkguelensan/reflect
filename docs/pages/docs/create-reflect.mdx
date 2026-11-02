@@ -1,7 +1,8 @@
+
 # `createReflect`
 
 ```ts
-import { createReflect } from '@effector/reflect';
+import {createReflect} from '@effector/reflect'
 ```
 
 Method for creating reflect a view. So you can create a UI kit by views and use a view with a store already.
@@ -82,9 +83,3 @@ export const User: FC = () => {
   );
 };
 ```
-
-## Imperative View methods
-
-Components returned by `createReflect` can be wrapped with the optional
-[withImperativeEvents](/docs/imperative) operator. It uses a separate entry point
-and does not add imperative options to this factory's configuration.

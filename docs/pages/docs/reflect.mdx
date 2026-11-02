@@ -52,6 +52,7 @@ const $name = restore(changeName, '');
 const changeAge = createEvent<number>();
 const $age = restore(changeAge, 0);
 
+
 // Components
 const Name = reflect({
   view: Input,
@@ -189,20 +190,14 @@ However, in some implementations, such as [Mantine UI](https://mantine.dev/guide
 In such cases, it is recommended to explicitly narrow the component type. For example:
 
 ```ts
-const ReflectedMantineButton = reflect({
-  view: MantineButton<'button'>, // <- notice explicit component type in the "<...>" brackets
-  bind: {
-    children: 'foo',
-    onClick: (e) => {
-      clicked(e.clientX);
+  const ReflectedMantineButton = reflect({
+    view: MantineButton<'button'>, // <- notice explicit component type in the "<...>" brackets
+    bind: {
+      children: 'foo',
+      onClick: (e) => {
+        clicked(e.clientX);
+      },
     },
-  },
-});
+  });
 ```
 
-## Imperative View methods
-
-The experimental [withImperativeEvents](/docs/imperative) operator can wrap the
-result of `reflect` to deliver scoped events to a React imperative handle.
-It is imported separately from `@effector/reflect/imperative`; the base `reflect`
-configuration and runtime do not include event delivery.

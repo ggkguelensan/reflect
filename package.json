@@ -73,8 +73,6 @@
     "clear-build": "rm -rf dist",
     "prepublishOnly": "pnpm build",
     "prepare": "husky install",
-    "example:textarea": "pnpm build && vite --config examples/imperative-textarea/vite.config.ts --host 127.0.0.1",
-    "example:textarea:check": "tsc -p examples/imperative-textarea && vite build --config examples/imperative-textarea/vite.config.ts",
     "test:imperative:bundle": "node scripts/check-imperative-bundle.mjs"
   },
   "devDependencies": {
@@ -119,7 +117,6 @@
     "tsd": "^0.19.1",
     "typescript": "^5.8.2",
     "uglify-js": "^3.19.3",
-    "vite": "^5.4.21",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^1.6.1",
     "zx": "^7.2.3"

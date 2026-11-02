@@ -30,7 +30,5 @@ jobs:
           CI: true
       - name: Check imperative entry and bundle isolation
         run: pnpm test:imperative:bundle
-      - name: Build textarea example
-        run: pnpm example:textarea:check
       - name: Validate package
         run: pnpm validate:dist
