@@ -268,3 +268,31 @@ test('a stable handle switches Scopes and repeated rerenders never multiply subs
   await allSettled(requested, { scope: second });
   expect(received).toHaveBeenCalledTimes(3);
 });
+
+test('inherited event keys are not subscribed', async () => {
+  const requested = createEvent<string>();
+  const inherited = createEvent<string>();
+  const sources = { show: requested };
+  Object.setPrototypeOf(sources, { missing: inherited });
+  const received = vi.fn();
+  function View({ events }: { events: Ref<{ show(value: string): void }> }) {
+    useImperativeHandle(events, () => ({ show: received }), []);
+    return null;
+  }
+  const Connected = withImperativeEvents(sources)(View);
+  const scope = fork();
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    render(
+      <Provider value={scope}>
+        <Connected />
+      </Provider>,
+    );
+    await allSettled(inherited, { scope, params: 'inherited' });
+    await allSettled(requested, { scope, params: 'own' });
+    expect(received.mock.calls).toEqual([['own']]);
+    expect(errors).not.toHaveBeenCalled();
+  } finally {
+    errors.mockRestore();
+  }
+});

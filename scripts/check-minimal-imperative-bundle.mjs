@@ -46,6 +46,10 @@ try {
     assert.ok(brotli <= 250, `Brotli budget exceeded: ${brotli} > 250`);
   if (process.argv.includes('--test')) {
     const root = fileURLToPath(new URL('..', import.meta.url));
+    execFileSync('pnpm', ['exec', 'tsc', '-p', 'type-tests/minimal'], {
+      cwd: root,
+      stdio: 'inherit',
+    });
     execFileSync('pnpm', ['build'], { cwd: root, stdio: 'inherit' });
     const dist = new URL('../dist/', import.meta.url);
     await mkdir(dist, { recursive: true });

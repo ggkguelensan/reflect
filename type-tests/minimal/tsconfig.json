@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2020", "dom"],
+    "types": ["vitest/globals"],
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["./types.tsx", "../../src/ssr/minimal-view-events.test.tsx"]
+}
