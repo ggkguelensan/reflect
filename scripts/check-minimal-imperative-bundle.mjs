@@ -76,6 +76,7 @@ try {
         'vitest',
         'run',
         'src/ssr/minimal-view-events.test.tsx',
+        'src/ssr/minimal-imperative-audit.test.tsx',
         '--config',
         'dist/minimal-vitest.config.mts',
         '--maxWorkers=1',
