@@ -9,6 +9,7 @@
   "include": [
     "./types.tsx",
     "./placements.tsx",
+    "../../src/experiments/notification-registration.test.tsx",
     "../../src/experiments/commit.test.tsx",
     "../../src/experiments/placements.test.tsx",
     "./known-limitations.tsx",
