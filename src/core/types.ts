@@ -16,8 +16,14 @@ export interface Context {
 
 export type View<T> = ComponentType<T>;
 
+type VoidCallback<Value> = Value extends (...args: never[]) => infer Result
+  ? () => Result
+  : never;
+
 export type BindProps<Props> = {
-  [K in keyof Props]: Props[K] | Store<Props[K]> | EventCallable<void>;
+  [K in keyof Props]: K extends 'key' | 'ref'
+    ? never
+    : Props[K] | Store<Props[K]> | VoidCallback<Props[K]>;
 };
 
 export type MapPropsSource =

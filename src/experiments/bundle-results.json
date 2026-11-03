@@ -1,0 +1,91 @@
+{
+  "generatedBy": "node scripts/compare-imperative-placements.mjs --test",
+  "baseline": "ac0fc8e",
+  "peerDependenciesExternal": [
+    "react",
+    "effector",
+    "effector-react",
+    "effector-react/scope"
+  ],
+  "brotliQuality": 11,
+  "node": "v25.8.1",
+  "results": {
+    "pristine": {
+      "minified": 1554,
+      "gzip": 773,
+      "brotli": 709,
+      "includesImperative": false
+    },
+    "safe_baseline": {
+      "minified": 1561,
+      "gzip": 777,
+      "brotli": 714,
+      "includesImperative": false
+    },
+    "base": {
+      "minified": 1586,
+      "gzip": 785,
+      "brotli": 726,
+      "includesImperative": false
+    },
+    "outer": {
+      "minified": 1885,
+      "gzip": 936,
+      "brotli": 865,
+      "includesImperative": true
+    },
+    "inner": {
+      "minified": 1887,
+      "gzip": 938,
+      "brotli": 862,
+      "includesImperative": true
+    },
+    "field": {
+      "minified": 1916,
+      "gzip": 933,
+      "brotli": 859,
+      "includesImperative": true
+    },
+    "separate": {
+      "minified": 1888,
+      "gzip": 929,
+      "brotli": 852,
+      "includesImperative": true
+    },
+    "field_unused": {
+      "minified": 1899,
+      "gzip": 925,
+      "brotli": 859,
+      "includesImperative": true
+    },
+    "separate_unused": {
+      "minified": 1586,
+      "gzip": 785,
+      "brotli": 726,
+      "includesImperative": false
+    },
+    "hoc_unused": {
+      "minified": 1554,
+      "gzip": 773,
+      "brotli": 709,
+      "includesImperative": false
+    },
+    "outer_pristine": {
+      "minified": 1853,
+      "gzip": 922,
+      "brotli": 848,
+      "includesImperative": true
+    },
+    "inner_pristine": {
+      "minified": 1855,
+      "gzip": 924,
+      "brotli": 845,
+      "includesImperative": true
+    }
+  },
+  "minifiedTests": {
+    "passed": 40,
+    "failed": 0,
+    "total": 40
+  }
+}

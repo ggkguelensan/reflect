@@ -8,6 +8,9 @@
   },
   "include": [
     "./types.tsx",
+    "./placements.tsx",
+    "../../src/experiments/commit.test.tsx",
+    "../../src/experiments/placements.test.tsx",
     "./known-limitations.tsx",
     "../../src/ssr/minimal-view-events.test.tsx",
     "../../src/ssr/minimal-imperative-audit.test.tsx"

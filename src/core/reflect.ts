@@ -11,7 +11,22 @@ import {
   View,
 } from './types';
 
-export interface ReflectConfig<Props, Bind extends BindProps<Props>> {
+export type RemainingProps<Props, Bind> = Props extends unknown
+  ? Omit<Props, keyof Bind> & Partial<Pick<Props, Extract<keyof Props, keyof Bind>>>
+  : never;
+
+export type ReflectedResult<
+  Props,
+  Bind,
+  Injected extends PropertyKey = never,
+> = React.ForwardRefExoticComponent<
+  PropsWithoutRef<
+    Omit<RemainingProps<Props, Bind>, Injected> & { [Key in Injected]?: never }
+  > &
+    RefAttributes<unknown>
+>;
+
+export interface ReflectConfig<Props, Bind extends Partial<BindProps<Props>>> {
   view: View<Props>;
   bind: Bind;
   mapProps?: MapPropsConfig<Props>;
@@ -23,7 +38,7 @@ export function reflectCreateFactory(context: Context) {
   const reflect = reflectFactory(context);
 
   return function createReflect<Props>(view: View<Props>) {
-    return <Bind extends BindProps<Props> = BindProps<Props>>(
+    return <Bind extends Partial<BindProps<Props>> = BindProps<Props>>(
       bind: Bind,
       params?: Pick<
         ReflectConfig<Props, Bind>,
@@ -34,9 +49,14 @@ export function reflectCreateFactory(context: Context) {
 }
 
 export function reflectFactory(context: Context) {
-  return function reflect<Props, Bind extends BindProps<Props> = BindProps<Props>>(
+  return function reflect<
+    Props,
+    Bind extends Partial<BindProps<Props>> = Partial<BindProps<Props>>,
+    Injected extends PropertyKey = never,
+  >(
     config: ReflectConfig<Props, Bind>,
-  ): React.ExoticComponent<PropsWithoutRef<Props> & RefAttributes<unknown>> {
+    useInjected?: () => Record<Injected, unknown>,
+  ): ReflectedResult<Props, Bind, Injected> {
     const { stores, events, data, functions } = sortProps(config.bind);
     const hooks = sortProps(config.hooks || {});
 
@@ -50,7 +70,10 @@ export function reflectFactory(context: Context) {
       mapPropsSources[key] = is.store(source) ? source : combine(source);
     }
 
-    return React.forwardRef((props: Props, ref) => {
+    return React.forwardRef<
+      unknown,
+      Omit<RemainingProps<Props, Bind>, Injected> & { [Key in Injected]?: never }
+    >((props, ref) => {
       const storeProps = context.useUnit(stores, config.useUnitConfig);
       const eventsProps = context.useUnit(events as any, config.useUnitConfig);
       const functionProps = useBoundFunctions(functions);
@@ -116,6 +139,8 @@ export function reflectFactory(context: Context) {
         };
       }, [eventsHooks, functionsHooks]);
 
+      // Static for this component's lifetime; the feature owns any hooks it calls.
+      Object.assign(finalProps, useInjected?.());
       return React.createElement(config.view as any, elementProps as any);
     });
   };
@@ -154,8 +179,12 @@ function useBoundFunctions(functions: Record<string, Function>) {
 
     for (const key in functions) {
       const fn = functions[key];
+      if (!fn) continue;
 
-      boundFunctions[key] = scopeBind(fn, { scope: scope || undefined, safe: true });
+      boundFunctions[key] = scopeBind(fn, {
+        ...(scope ? { scope } : {}),
+        safe: true,
+      });
     }
 
     return boundFunctions;
